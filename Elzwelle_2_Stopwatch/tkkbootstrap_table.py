@@ -1,6 +1,6 @@
 import ttkbootstrap as ttk
 from ttkbootstrap.tableview import Tableview
-from ttkbootstrap.constants import *
+from ttkbootstrap.constants import SUCCESS
 
 # Create main window
 my_w = ttk.Window()
