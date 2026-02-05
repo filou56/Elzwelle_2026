@@ -75,6 +75,9 @@ serial_time_stamp        = 0
 serial_time_stamp_start  = 0
 serial_time_stamp_finish = 0
 
+view_time_stamp_start    = 0
+view_time_stamp_finish   = 0
+
 # 10.02.2018 HM
 time_stamps_start_all  = [program_launch_time_stamp] * NUMBER_OF_EVENT
 time_stamps_finish_all = [program_launch_time_stamp] * NUMBER_OF_EVENT
@@ -83,13 +86,10 @@ time_stamps_finish_all = [program_launch_time_stamp] * NUMBER_OF_EVENT
 #start_sheet  = Spreadsheet(spreadsheet_id=SPREADSHEET_ID, tab_name='Start')
 #finish_sheet = Spreadsheet(spreadsheet_id=SPREADSHEET_ID, tab_name='Ziel')
 
-#-------------------------------------------------------------------
-# callback function when start sensor is triggered
-# will be connected to an interrupt -- so runs in a different thread
-#-------------------------------------------------------------------
-def StartSensorTriggered(channel):
+def StartSensorTriggered():
     global time_stamps_start_dirty 
     global serial_time_stamp_start
+    global view_time_stamp_start
 
     if serial_time_stamp_start == 0:
         t = time.time()
@@ -97,13 +97,12 @@ def StartSensorTriggered(channel):
         t = serial_time_stamp_start
         serial_time_stamp_start = 0
 
-    # da war von Olaf eine Routine zur Unterdrueckung kurzer Impulse. Geloescht weil es nicht richtig funktioniert hat
     t2 = t - program_launch_time_stamp
     print(("adding start timestamp: {:.2f} ".format(t2)))
     time_stamps_start.insert(0, t)
     while( len(time_stamps_start) > KEEP_NUM_TIME_STAMPS):
         time_stamps_start.pop()
-    # # 10.02.2018 HM
+
     time_stamps_start_all.insert(0, t)
     while( len(time_stamps_start_all) > NUMBER_OF_EVENT):
         time_stamps_start_all.pop()
@@ -115,16 +114,12 @@ def StartSensorTriggered(channel):
                             + " {:.2f} 0".format(t2).replace(".",","), 
                             qos=1)
     time_stamps_start_dirty = True
-    # print ("sys.getsizeof(klist1): ",sys.getsizeof(time_stamps_start_all))
-    # print ("asizeof(klist1): ",asizeof(time_stamps_start_all))
-
-#-------------------------------------------------------------------
-# callback function when finish sensor is triggered
-# will be connected to an interrupt -- so runs in a different thread
-#-------------------------------------------------------------------
-def FinishSensorTriggered(channel):
+    view_time_stamp_start = t
+  
+def FinishSensorTriggered():
     global time_stamps_finish_dirty
     global serial_time_stamp_finish
+    global view_time_stamp_finish
 
     if serial_time_stamp_finish == 0:
         t = time.time()
@@ -132,13 +127,12 @@ def FinishSensorTriggered(channel):
         t = serial_time_stamp_finish
         serial_time_stamp_finish = 0
 
-    # wait if signal disappears too early -- removed
     t2 = t - program_launch_time_stamp
     print(("adding finish timestamp: {:.2f} ".format(t2)))
     time_stamps_finish.insert(0, t)
     while( len(time_stamps_finish) > KEEP_NUM_TIME_STAMPS):
         time_stamps_finish.pop()
-    # # 10.02.2018 HM
+    
     time_stamps_finish_all.insert(0, t)
     while( len(time_stamps_finish_all) > NUMBER_OF_EVENT):
         time_stamps_finish_all.pop()
@@ -148,6 +142,7 @@ def FinishSensorTriggered(channel):
                             payload=time.strftime('%H:%M:%S', time.localtime(t)) 
                             + " {:.2f} 0".format(t2).replace(".",","), 
                             qos=1)
+    view_time_stamp_finish = t
     time_stamps_finish_dirty = True
 
 #-------------------------------------------------------------------
@@ -205,7 +200,6 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                 t2 = t - program_launch_time_stamp
                 self.wfile.write(bytes("{:.2f}<br>".format(t2).replace(".",","), "utf-8"))
             self.wfile.writ(bytes("</body></html>", "utf-8"))
-
 
         else:
             # standard webpage for everything else
@@ -368,15 +362,15 @@ class SimpleApp(ttk.Window):
             table.view.see(last_row_id)
             
     def StartButtonClicked(self):
-        #StartSensorTriggered(None)
-        self.start_table.insert_row('end', [self.start_id,"00:00:00", 0])
+        StartSensorTriggered()
+        #self.start_table.insert_row('end', [self.start_id,"00:00:00", 0])
         self.start_id = self.start_id + 1
         self.ScrollToLast(self.start_table)
         self.finish_table.load_table_data()
 
     def FinishButtonClicked(self):
-        #FinishSensorTriggered(None)
-        self.finish_table.insert_row('end', [self.finish_id,"00:00:00", 0])
+        FinishSensorTriggered()
+        #self.finish_table.insert_row('end', [self.finish_id,"00:00:00", 0])
         self.finish_id = self.finish_id + 1
         self.ScrollToLast(self.finish_table)
         self.finish_table.load_table_data()
@@ -432,6 +426,8 @@ class SimpleApp(ttk.Window):
         global time_stamps_finish_dirty
         global update_time_stamp
         global serial_time_stamp
+        global view_time_stamp_start
+        global view_time_stamp_finish
         
         if update_time_stamp or not config.getboolean('serial', 'enabled'):
             if serial_time_stamp == 0:
@@ -443,6 +439,26 @@ class SimpleApp(ttk.Window):
                                    "{:.2f}".format(t-program_launch_time_stamp).replace(".",","))
             update_time_stamp = False
         
+        if time_stamps_start_dirty:
+            self.start_table.insert_row('end', [self.start_id,
+                                                "{}".format(time.strftime("%H:%M:%S")),
+                                                "{:.2f}".format(view_time_stamp_start-program_launch_time_stamp).replace(".",",")
+                                                ])
+            self.start_id = self.start_id + 1
+            self.ScrollToLast(self.start_table)
+            self.finish_table.load_table_data()
+            time_stamps_start_dirty = False
+
+        if time_stamps_finish_dirty:
+            self.finish_table.insert_row('end', [self.finish_id,
+                                                 "{}".format(time.strftime("%H:%M:%S")),
+                                                 "{:.2f}".format(view_time_stamp_finish-program_launch_time_stamp).replace(".",",")
+                                                 ])
+            self.finish_id = self.finish_id + 1
+            self.ScrollToLast(self.finish_table)
+            self.finish_table.load_table_data()
+            time_stamps_finish_dirty = False
+            
         gc.collect()
         self.after(500, self.Refresh)
         
@@ -618,6 +634,7 @@ if __name__ == '__main__':
             print('Read RTC')
             port.write(str.encode('r'))  
             time.sleep(0.5)
+            
             unix_epoch = int(program_launch_time_stamp) 
             print('Set Epoch: {0:d}'.format(unix_epoch))
             port.write(str.encode('e{0:d}'.format(unix_epoch)))      
@@ -630,7 +647,7 @@ if __name__ == '__main__':
                         if line[0] == '#':
                             try:
                                 serial_time_stamp = float(line[1:-1])
-                                print('Time\t{0:.2f}'.format(serial_time_stamp))
+                                print('Time\t{0:.2f} -- {1:.2f}'.format(serial_time_stamp,time.time()))
                                 update_time_stamp = True
                             except ValueError:
                                 print("EXCEPTION serial_time_stamp:  Not a float")
@@ -638,14 +655,14 @@ if __name__ == '__main__':
                             try:
                                 serial_time_stamp_start = float(line[1:-1])
                                 print('Start\t{0:.2f}'.format(serial_time_stamp_start))
-                                StartSensorTriggered(None)
+                                StartSensorTriggered()
                             except ValueError:
                                 print("EXCEPTION serial_time_stamp_start:  Not a float")
                         if line[0] == 'F':
                             try:
                                 serial_time_stamp_finish = float(line[1:-1])
                                 print('Finish\t{0:.2f}'.format(serial_time_stamp_finish))
-                                FinishSensorTriggered(None)
+                                FinishSensorTriggered()
                             except ValueError:
                                 print("EXCEPTION serial_time_stamp_finish:  Not a float")      
                 except Exception as e:
