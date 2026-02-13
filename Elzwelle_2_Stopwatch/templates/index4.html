@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Elzwelle Web View</title>
+    <!-- Cosmo Theme passend zu ttkbootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.2/dist/cosmo/bootstrap.min.css">
+    
+    <style>
+		body, html {
+		    height: 100%;
+		    overflow: hidden;
+		}
+		
+	    #table-start, #table-finish {
+        	font-size: 1,5rem;
+    	}
+	    
+		.table-scroll-container {
+			/*width: 100% !important;*/
+			overflow-x: hidden;
+		    /* Berechnet: 100% Fensterhöhe minus Platz für Header und Abstände */
+		    height: calc(100vh - 200px) !important; 
+		    overflow-y: scroll !important;
+		    border: 1px solid #dee2e6;
+		    display: block;
+		    background-color: #fff;
+		}
+        
+     	.table-scroll-container table {
+	        /*width: 100% !important;*/
+	        table-layout: fixed; /* Verhindert das Springen der Spaltenbreite */
+	        /* word-wrap: break-word; /* Bricht lange Texte innerhalb der Zelle um */
+	    }
+	    
+	    .table tbody {
+	    	width: 90% !important;
+	    }
+	    
+	    .table thead {
+	    	position: sticky;
+            top: 0;
+            z-index: 1;
+	    	width: 90% !important;
+	    }
+	    
+	    .table thead th {
+		    font-size: 1.5rem !important;  		/* Deine gewünschte Größe */
+		    font-weight: bold;
+		    background-color: #2780e3; 			/* Cosmo Blau */
+        	color: white;
+		    /* text-transform: uppercase;     	/* Optional: Macht es professioneller */
+		}
+		
+	    .table tbody td {
+	    	width: 100% !important;
+	        font-size: 1.5rem !important;
+	    }
+	</style>
+    
+</head>
+<body class="p-4">
+    <div class="container-fluid">
+        <h1 class="mb-4 text-center text-primary">Live Monitor <small class="text-muted">| Status: Online</small></h1>
+        
+        <div class="row">
+            <!-- Linke Spalte: Start -->
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="h4 card-header bg-success text-light"><strong>Start</strong></div>
+                    
+                        <table class="table table-striped mb-0  table-sm">
+                        	<colgroup>
+							    <col style="width: 30%;">
+							    <col style="width: 70%;">
+							</colgroup>
+							<thead>
+							    <tr>
+							    	<th>Zeit</th>
+							    	<th>Zeitstempel</th>
+							    </tr>
+							</thead>
+                            <tbody id="table-start">
+                                <!-- Daten kommen via JS -->
+                            </tbody>
+                        </table>
+                    
+                </div>
+            </div>
+			        
+            <!-- Linke Spalte: Ziel -->
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="h4 card-header bg-danger text-light"><strong>Ziel</strong></div>
+                    
+                        <table class="table table-striped mb-0 table-scroll-container table-sm">
+                            <thead>
+                                <tr>
+                                	<th class="col-time">Zeit</th>
+                                	<th class="col-data">Zeitstempel</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-finish">
+                                <!-- Daten kommen via JS -->
+                            </tbody>
+                        </table>
+                    
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        async function refreshData() {
+            try {
+                const response = await fetch('/api/data');
+                const data = await response.json();
+                
+                // Filtern für Start
+                const startRows = data.filter(item => item.src === 'Start').reverse();
+                document.getElementById('table-start').innerHTML = startRows.map(item => `
+                    <tr>
+                        <td>${item.time || '-'}</td>
+                        <td>${item.val}</td>
+                    </tr>
+                `).join('');
+
+                // Filtern für Ziel
+                const finishRows = data.filter(item => item.src === 'Finish').reverse();
+                document.getElementById('table-finish').innerHTML = finishRows.map(item => `
+                    <tr>
+                        <td>${item.time || '-'}</td>
+                        <td>${item.val}</td>
+                    </tr>
+                `).join('');
+                
+            } catch (err) {
+                console.error("Daten konnten nicht geladen werden:", err);
+            }
+        }
+
+        // Alle 1000ms aktualisieren
+        setInterval(refreshData, 1000);
+    </script>
+</body>
+</html>

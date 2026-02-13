@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Data Monitor</title>
+    <!-- Wir laden das Theme trotzdem für die Farben -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.2/dist/cosmo/bootstrap.min.css">
+    
+    <style>
+        /* Erzwungenes Nebeneinander-Layout */
+        .flex-container {
+            display: flex;
+            gap: 20px; /* Abstand zwischen den Spalten */
+            width: 100%;
+        }
+        .column {
+            flex: 1; /* Beide Spalten nehmen genau 50% ein */
+            min-width: 0; /* Verhindert, dass Tabellen die Spalte sprengen */
+        }
+        .scroll-box {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #4e5d6c;
+            background-color: #2b3e50;
+        }
+        th { color: #ebebeb; }
+    </style>
+    -->
+</head>
+<body class="bg-dark text-light p-4">
+
+    <div class="container-fluid">
+        <h2 class="text-info mb-4">Live Monitor</h2>
+
+        <div class="flex-container">
+            
+            <!-- Linke Spalte -->
+            <div class="column">
+                <h4 class="text-warning">Start</h4>
+                <div class="scroll-box">
+                    <table class="table table-dark table-striped mb-0">
+                        <thead>
+                            <tr><th style="width:30%">Zeit</th><th>Wert</th></tr>
+                        </thead>
+                        <tbody id="table-serial">
+                            <!-- Hier landen die Serial-Daten -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Rechte Spalte -->
+            <div class="column">
+                <h4 class="text-info">Ziel</h4>
+                <div class="scroll-box">
+                    <table class="table table-dark table-striped mb-0">
+                        <thead>
+                            <tr><th style="width:30%">Zeit</th><th>Wert</th></tr>
+                        </thead>
+                        <tbody id="table-mqtt">
+                            <!-- Hier landen die MQTT-Daten -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        async function updateTables() {
+		    try {
+		        const response = await fetch('/api/data');
+		        const data = await response.json();
+		
+		        // 1. Tabellen-Elemente im HTML finden
+		        const serialTable = document.getElementById('table-serial');
+		        const mqttTable = document.getElementById('table-mqtt');
+		
+		        // 2. Daten filtern (wir drehen sie um, damit die neuesten oben stehen)
+		        const serialEntries = data.filter(item => item.src === "Start").reverse();
+		        const mqttEntries = data.filter(item => item.src === "Finish").reverse();
+		
+		        // 3. HTML-Strings zusammenbauen
+		        serialTable.innerHTML = serialEntries.map(item => `
+		            <tr>
+		                <td class="text-warning small">${item.time || '-'}</td>
+		                <td class="text-light">${item.val}</td>
+		            </tr>
+		        `).join('');
+		
+		        mqttTable.innerHTML = mqttEntries.map(item => `
+		            <tr>
+		                <td class="text-info small">${item.time || '-'}</td>
+		                <td class="text-light">${item.val}</td>
+		            </tr>
+		        `).join('');
+		
+		    } catch (err) {
+		        console.error("Verbindung zum FastAPI-Server fehlgeschlagen:", err);
+		    }
+		}
+		
+		// Alle 1000 Millisekunden (1 Sekunde) aktualisieren
+		setInterval(updateTables, 1000);
+		
+		// Erster Aufruf sofort beim Laden
+		updateTables();
+    </script>
+</body>
+</html>

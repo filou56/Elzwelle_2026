@@ -1,17 +1,3 @@
-# Feb 2020 mit 2to3 nach Python3.
-# händisch alle s.wfile.write("</body></html>")
-#    ersetzt durch s.wfile.write(bytes("</body></html>", "utf-8"))  usw.
-
-# Kurze Impulse werden in dieser Software-Version nicht unterdrueckt !!
-# Auch nach unterdrueckten kurzen Impulsen schlaegt die Totzeit 200ms zu!
-# Gefahr dass dann gar kein Zeitereignis ausgeloest wird
-
-# Totzeit  nach einem Ereignis von 300 ms     durch bouncetime=300
-
-# Software-Pull-Up Widerstaende am GPIO Eingang deakiviert wg RC-Glied
-# zur Unterdrueckung kurzer Impulse
-
-# Web-Browser mit den Zeiten wird alle 10 Sekunden automatisch aktualisiert
 
 import time
 from time import sleep
@@ -253,11 +239,11 @@ class SimpleApp(ttk.Window):
         label.grid(row=0,column=0,columnspan=2,sticky="EW",padx=10, pady=5)
         self.labelVariable.set(HOST_NAME)
         
-        start_button = ttk.Button(self, text="Start",command=self.StartButtonClicked, bootstyle=SUCCESS)
+        start_button = ttk.Button(self, text="Start",command=self.start_button_clicked, bootstyle=SUCCESS)
         start_button.grid(row=1,column=0,sticky="EW",padx=10, pady=5)
         
         #Add a button that says 'Ziel' at (1,1)
-        finish_button = ttk.Button(self,text="Ziel",command=self.FinishButtonClicked, bootstyle=DANGER)
+        finish_button = ttk.Button(self,text="Ziel",command=self.finish_button_clicked, bootstyle=DANGER)
         finish_button.grid(row=1,column=1,sticky="EW",padx=10, pady=5)
         
         start_header = [
@@ -287,11 +273,11 @@ class SimpleApp(ttk.Window):
         self.start_table.autofit_columns()
 
         # Rechtsklick NUR auf die interne View binden
-        self.start_table.view.bind("<Button-3>", self.StartCopyMenu)
+        self.start_table.view.bind("<Button-3>", self.start_copy_menu)
         self.start_table.view.unbind("<Button-1>")
         
         # Strg+C an das Fenster oder die Tableview binden
-        self.start_table.view.bind("<Control-c>", self.StartControl_C)
+        self.start_table.view.bind("<Control-c>", self.start_control_c)
        
         finish_header = [
             {"text":"ID"},
@@ -320,16 +306,16 @@ class SimpleApp(ttk.Window):
         self.finish_table.autofit_columns()
         
         # Rechtsklick NUR auf die interne View binden
-        self.finish_table.view.bind("<Button-3>", self.FinishCopyMenu)
+        self.finish_table.view.bind("<Button-3>", self.finish_copy_menu)
         self.finish_table.view.unbind("<Button-1>")
         
         # Strg+C an das Fenster oder die Tableview binden
-        self.finish_table.view.bind("<Control-c>", self.FinishControl_C)
+        self.finish_table.view.bind("<Control-c>", self.finish_control_c)
         
         help_label = ttk.Label(self, text="Zurück zum Fenstermodus mit ESC", font=("Helvetica", 9) )
         help_label.grid(row=3,column=0,sticky="EW",padx=10, pady=5, columnspan = 2)
         
-    def StartControl_C(self, event=None):
+    def start_control_c(self, event=None):
         # 1. Die aktuell fokussierte Zeile und Spalte finden
         row_id = self.start_table.view.focus()
         row_data = self.start_table.view.item(row_id)['values']
@@ -339,7 +325,7 @@ class SimpleApp(ttk.Window):
         self.update() # Synchronisiert mit dem OS-Clipboard
         print(row_data)
     
-    def FinishControl_C(self, event=None):
+    def finish_control_c(self, event=None):
         # 1. Die aktuell fokussierte Zeile und Spalte finden
         row_id = self.finish_table.view.focus()
         row_data = self.finish_table.view.item(row_id)['values']
@@ -349,7 +335,7 @@ class SimpleApp(ttk.Window):
         self.update() # Synchronisiert mit dem OS-Clipboard
         print(row_data)
         
-    def ScrollToLast(self,table):
+    def scroll_to_last(self,table):
         # 1. Alle Zeilen-IDs aus der internen Treeview abrufen
         all_rows = table.view.get_children()
         
@@ -361,21 +347,21 @@ class SimpleApp(ttk.Window):
             table.view.focus(last_row_id)
             table.view.see(last_row_id)
             
-    def StartButtonClicked(self):
+    def start_button_clicked(self):
         StartSensorTriggered()
         #self.start_table.insert_row('end', [self.start_id,"00:00:00", 0])
         self.start_id = self.start_id + 1
-        self.ScrollToLast(self.start_table)
+        self.scroll_to_last(self.start_table)
         self.finish_table.load_table_data()
 
-    def FinishButtonClicked(self):
+    def finish_button_clicked(self):
         FinishSensorTriggered()
         #self.finish_table.insert_row('end', [self.finish_id,"00:00:00", 0])
         self.finish_id = self.finish_id + 1
-        self.ScrollToLast(self.finish_table)
+        self.scroll_to_last(self.finish_table)
         self.finish_table.load_table_data()
        
-    def StartCopyMenu(self, event):
+    def start_copy_menu(self, event):
         # Identifiziere die Zelle
         row_id = self.start_table.view.identify_row(event.y)
         column_id = self.start_table.view.identify_column(event.x)
@@ -390,12 +376,12 @@ class SimpleApp(ttk.Window):
             menu = tk.Menu(self, tearoff=0)
             menu.add_command(
                 label=f"Wert kopieren: {cell_value}", 
-                command=lambda: self.CopyToClipboard(cell_value)
+                command=lambda: self.copy_to_clipboard(cell_value)
             )
             # Menü an Mausposition anzeigen
             menu.post(event.x_root, event.y_root)
 
-    def FinishCopyMenu(self, event):
+    def finish_copy_menu(self, event):
         # Identifiziere die Zelle
         row_id = self.finish_table.view.identify_row(event.y)
         column_id = self.finish_table.view.identify_column(event.x)
@@ -410,12 +396,12 @@ class SimpleApp(ttk.Window):
             menu = tk.Menu(self, tearoff=0)
             menu.add_command(
                 label=f"Wert kopieren: {cell_value}", 
-                command=lambda: self.CopyToClipboard(cell_value)
+                command=lambda: self.copy_to_clipboard(cell_value)
             )
             # Menü an Mausposition anzeigen
             menu.post(event.x_root, event.y_root)
             
-    def CopyToClipboard(self, value):
+    def copy_to_clipboard(self, value):
         self.clipboard_clear()
         self.clipboard_append(str(value))
         # Optional: Kleiner Hinweis in der Statuszeile oder Konsole
@@ -445,7 +431,7 @@ class SimpleApp(ttk.Window):
                                                 "{:.2f}".format(view_time_stamp_start-program_launch_time_stamp).replace(".",",")
                                                 ])
             self.start_id = self.start_id + 1
-            self.ScrollToLast(self.start_table)
+            self.scroll_to_last(self.start_table)
             self.finish_table.load_table_data()
             time_stamps_start_dirty = False
 
@@ -455,7 +441,7 @@ class SimpleApp(ttk.Window):
                                                  "{:.2f}".format(view_time_stamp_finish-program_launch_time_stamp).replace(".",",")
                                                  ])
             self.finish_id = self.finish_id + 1
-            self.ScrollToLast(self.finish_table)
+            self.scroll_to_last(self.finish_table)
             self.finish_table.load_table_data()
             time_stamps_finish_dirty = False
             

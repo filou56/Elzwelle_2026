@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+jinja2
+markupsafe==2.0.1
+ttkbootstrap
+aiomqtt
+pyserial

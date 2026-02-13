@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Data Bridge Dashboard</title>
+    <!-- Cosmo Theme passend zu ttkbootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootswatch@5.3.2/dist/cosmo/bootstrap.min.css">
+    
+    <style>
+	    /* Der Käfig für die Tabelle */
+	    .table-scroll-container {
+	        height: 500px !important;   /* Feste Höhe erzwingen */
+	        overflow-y: scroll !important; /* Balken immer da */
+	        overflow-x: hidden;
+	        border: 1px solid #dee2e6;
+	        position: relative;         /* Anker für Sticky Header */
+	        display: block;             /* Wichtig für Scroll-Verhalten */
+	    }
+	
+	    /* Die Tabelle im Inneren */
+	    .table-scroll-container table {
+	        margin-bottom: 0;           /* Kein Rand unten */
+	        width: 100%;
+	        table-layout: fixed;        /* Verhindert Breiten-Springen */
+	    }
+	
+	    /* Damit der Header oben bleibt während man im Container scrollt */
+	    .table-scroll-container thead th {
+	        position: sticky;
+	        top: 0;
+	        background-color: #2780e3; 
+	        color: white;
+	        z-index: 10;
+	        border-top: none;
+	    }
+	</style>
+    
+</head>
+<body class="p-4">
+    <div class="container-fluid">
+        <h1 class="mb-4 text-center text-info">Live Monitor <small class="text-muted">| Status: Online</small></h1>
+        
+        <div class="row">
+            <!-- Linke Spalte: Start -->
+            <div class="col-md-6">
+                <div class="card border-warning mb-3">
+                    <div class="card-header bg-warning text-dark"><strong>Start</strong></div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover table-striped mb-0 table-scroll-container">
+                            <thead>
+                                <tr><th style="width: 30%">Zeit</th><th style="width: 60%">Daten</th></tr>
+                            </thead>
+                            <tbody id="table-start">
+                                <!-- Daten kommen via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rechte Spalte: Ziel -->
+            <div class="col-md-6">
+                <div class="card border-info mb-3">
+                    <div class="card-header bg-info text-dark"><strong>Ziel</strong></div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover table-striped mb-0 table-scroll-container">
+                            <thead>
+                                <tr><th style="width: 30%">Zeit</th><th style="width: 60%">Daten</th></tr>
+                            </thead>
+                            <tbody id="table-finish">
+                                <!-- Daten kommen via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function refreshData() {
+            try {
+                const response = await fetch('/api/data');
+                const data = await response.json();
+                
+                // Filtern für Serial
+                const serialRows = data.filter(item => item.src === 'Start').reverse();
+                document.getElementById('table-start').innerHTML = serialRows.map(item => `
+                    <tr>
+                        <td class="text-warning">${item.time || '-'}</td>
+                        <td>${item.val}</td>
+                    </tr>
+                `).join('');
+
+                // Filtern für MQTT
+                const mqttRows = data.filter(item => item.src === 'Finish').reverse();
+                document.getElementById('table-finish').innerHTML = mqttRows.map(item => `
+                    <tr>
+                        <td class="text-info">${item.time || '-'}</td>
+                        <td>${item.val}</td>
+                    </tr>
+                `).join('');
+                
+            } catch (err) {
+                console.error("Daten konnten nicht geladen werden:", err);
+            }
+        }
+
+        // Alle 1000ms aktualisieren
+        setInterval(refreshData, 1000);
+    </script>
+</body>
+</html>
