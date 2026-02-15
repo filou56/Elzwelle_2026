@@ -4,7 +4,6 @@ import tkinter as tk
 import elzwelle_global as glob
 
 from ttkbootstrap.widgets.tableview import Tableview
-from ttkbootstrap.constants import SUCCESS, PRIMARY, DANGER
 
 from elzwelle_config import HOST_NAME 
 #from elzwelle_global import program_launch_time_stamp
@@ -12,11 +11,28 @@ from elzwelle_config import HOST_NAME
 from queue import Empty
 
 class MainApp(ttk.Window):
-    def __init__(self, gui_queue, manager):
-        # Initialisiere die Window-Klasse mit Theme und Titel
-        super().__init__(themename="cosmo", title="Elzwelle Stopuhr")
+    def __init__(self, theme, gui_queue, manager):
         
+        # Initialisiere die Window-Klasse mit Theme und Titel
+
+        if theme == "light":
+            super().__init__(themename="cosmo", title="Elzwelle Stopuhr")
+            self.table_bootstyle = "primary"
+            self.table_stripecolor = self.style.colors.light
+        else:
+            super().__init__(themename="darkly", title="Elzwelle Stopuhr")
+            self.table_bootstyle = "info"
+            self.table_stripecolor = self.style.colors.secondary
+        
+        glob.current_theme = self.style.theme.name
+        
+        #self.configure(background='#dddddd')     
+        #self.configure(background='#000')   
+              
         self.gui_queue = gui_queue
+        
+        # Das Schließen des Fensters an eine Methode binden
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
         
         # Speichere die Referenz auf den DataManager
         self.manager = manager
@@ -33,27 +49,49 @@ class MainApp(ttk.Window):
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
         self.rowconfigure(2, weight=1)
-        self.configure(background='#dddddd')        
+        
         # Tableview uses Treeview style
         self.style.map("Treeview", rowheight=[("!disabled", 20)])
+        
+    def on_closing(self):
+        # Den Prozess hart beenden, um alle hängenden Threads (MQTT/Serial) zu killen
+        import os
+        os._exit(0)
         
     def initialize(self):
         self.start_id = 1;
         self.finish_id = 1;
         # Widgets hier erstellen
         
-        self.labelVariable = ttk.StringVar()
-        label = ttk.Label(self,textvariable=self.labelVariable,anchor="w",
-                          foreground="#3498db",  # Ein schönes Blau
-                          background="#f8f9fa")  # Sehr helles Grau
-        label.grid(row=0,column=0,columnspan=2,sticky="EW",padx=10, pady=5)
-        self.labelVariable.set(HOST_NAME)
+        # self.labelVariable = ttk.StringVar()
+        # label = ttk.Label(self,textvariable=self.labelVariable,anchor="w",
+        #                   foreground="#3498db",  # Ein schönes Blau
+        #                   background="#f8f9fa")  # Sehr helles Grau
+        # label.grid(row=0,column=0,columnspan=2,sticky="EW",padx=10, pady=5)
+        # self.labelVariable.set(HOST_NAME)
         
-        start_button = ttk.Button(self, text="Start",command=self.start_button_clicked, bootstyle=SUCCESS)
+        info_panel = ttk.Frame(self, bootstyle="primary")
+        info_panel.grid(row=0,column=0,columnspan=2,sticky="EW",padx=10, pady=5)
+        
+        self.labelHost = ttk.StringVar()
+        lbl1 = ttk.Label(info_panel, textvariable=self.labelHost, anchor="w", font=("Helvetica", 14, "bold"), bootstyle ="inverse-primary")
+        lbl1.pack(side="left", fill="x", expand=True, pady=5, padx=10)
+        self.labelTime = ttk.StringVar()
+        lbl2 = ttk.Label(info_panel, textvariable=self.labelTime, anchor="w", font=("Helvetica", 14, "bold"), bootstyle = "inverse-primary")
+        lbl2.pack(side="left", fill="x", expand=True, pady=5, padx=10)
+        
+        status_frame = ttk.Frame(info_panel, bootstyle="light")
+        status_frame.pack(side="left", fill="x", expand=True, pady=5, padx=10)
+        self.status_mqtt = ttk.Label(status_frame, text="MQTT", anchor="c", font=("Helvetica", 10, "bold"), bootstyle = "inverse-success")
+        self.status_mqtt.pack(side="left", fill="x", expand=True, pady=1, padx=1 )
+        self.status_serial = ttk.Label(status_frame, text="Serial", anchor="c", font=("Helvetica", 10, "bold"), bootstyle = "inverse-success")
+        self.status_serial.pack(side="left", fill="x", expand=True, pady=1, padx=1 )
+        
+        start_button = ttk.Button(self, text="Start",command=self.start_button_clicked, bootstyle="SUCCESS")
         start_button.grid(row=1,column=0,sticky="EW",padx=10, pady=5)
         
         #Add a button that says 'Ziel' at (1,1)
-        finish_button = ttk.Button(self,text="Ziel",command=self.finish_button_clicked, bootstyle=DANGER)
+        finish_button = ttk.Button(self,text="Ziel",command=self.finish_button_clicked, bootstyle="DANGER")
         finish_button.grid(row=1,column=1,sticky="EW",padx=10, pady=5)
         
         start_header = [
@@ -72,8 +110,8 @@ class MainApp(ttk.Window):
             coldata=start_header,                           # Column headers
             rowdata=start_data,                             # Table data
             searchable=False,                               # Enable search feature
-            bootstyle=PRIMARY,                              # Bootstrap style
-            stripecolor=(self.style.colors.light, None),    # Row stripe colors
+            bootstyle=self.table_bootstyle,                 # Bootstrap style
+            stripecolor=(self.table_stripecolor, None),     # Row stripe colors
             yscrollbar=True
         )
 
@@ -105,8 +143,8 @@ class MainApp(ttk.Window):
             coldata=finish_header,                          # Column headers
             rowdata=finish_data,                            # Table data
             searchable=False,                               # Enable search feature
-            bootstyle=PRIMARY,                              # Bootstrap style
-            stripecolor=(self.style.colors.light, None),    # Row stripe colors
+            bootstyle=self.table_bootstyle,                 # Bootstrap style
+            stripecolor=(self.table_stripecolor, None),     # Row stripe colors
             yscrollbar=True
         )
    
@@ -222,7 +260,7 @@ class MainApp(ttk.Window):
                 t = time.strftime('%H:%M:%S', time.localtime(time.time()))
                         
                 try:
-                    if source != "MQTT":
+                    if source != "MQTT" and source != "Error":
                         s = float(data)
                         d = (time.time() - glob.program_launch_time_stamp) - s
                         f = "{:.2f}".format(s).replace(".",",")
@@ -243,10 +281,16 @@ class MainApp(ttk.Window):
                         
                         if source == "Stamp":
                             # f = "{:.2f}".format(s).replace(".",",")
-                            sync_time_stamp = "{}      |      {}      |      ".format(HOST_NAME, t) + f
-                            self.labelVariable.set(sync_time_stamp) 
+                            self.labelHost.set(HOST_NAME)
+                            self.labelTime.set(t+"  "+f)
+                            sync_time_stamp = "{}      |      {}      |      ".format(HOST_NAME, t) + f 
                             self.manager.update_sync_time_stamp(sync_time_stamp)
+                            self.status_serial.configure(bootstyle="inverse-success")
                             
+                    if source == "Error":
+                        if ( data == "Serial connection lost"):
+                            self.status_serial.configure(bootstyle="inverse-danger")
+                                
                 except ValueError:
                     print("EXCEPTION serial_time_stamp:  Not a float")
                      

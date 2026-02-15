@@ -1,9 +1,12 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-#from datetime import datetime
+
 import uvicorn
 import threading
+
+import elzwelle_global as glob
 
 class WebProvider:
     def __init__(self, data_buffer=None, manager=None, port=8080):
@@ -11,6 +14,10 @@ class WebProvider:
         self.data_buffer = data_buffer
         self.port        = port
         self.manager     = manager
+        
+        # Mountet den lokalen Ordner "static" unter dem URL-Pfad "/static"
+        self.app.mount("/static", StaticFiles(directory="static"), name="static")
+
         # Templates-Ordner für HTML-Dateien
         self.templates = Jinja2Templates(directory="templates")
 
@@ -19,7 +26,8 @@ class WebProvider:
             # Rendert die index.html mit den aktuellen Daten
             return self.templates.TemplateResponse("index.html", {
                 "request": request, 
-                "data": list(self.data_buffer)
+                "data": list(self.data_buffer),
+                "theme_file": f"{glob.current_theme}.css"
             })
 
         @self.app.get("/api/data")

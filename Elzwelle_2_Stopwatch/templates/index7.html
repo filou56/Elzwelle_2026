@@ -8,12 +8,47 @@
     
     <!-- Lokales CSS einbinden -->
     <!-- link rel="stylesheet" href="{{ url_for('static', path='/bootstrap_cosmo_min.css') }}" -->
-    <!-- link rel="stylesheet" href="{{ url_for('static', path='/bootstrap.min.css') }}" -->
+    <link rel="stylesheet" href="{{ url_for('static', path='/bootstrap.min.css') }}">
     
-    <link rel="stylesheet" href="{{ url_for('static', path='/css/' + theme_file) }}" id="theme-link">
-	<link rel="stylesheet" href="{{ url_for('static', path='/css/custom_' + theme_file) }}" id="custom_theme-link">
-	
-</head>
+    <style>
+/*    
+    	:root {
+    		--bs-light-rgb: #AAAAAA;   		
+    	}
+    
+    	.table-scroll-container {
+		    /* Berechnet: 100% Fensterhöhe minus Platz für Header und Abstände */
+		    height: calc(100vh - 200px) !important; 
+		    overflow-y: scroll !important;
+		    display: block;
+		    border: 2px solid #888;
+		}
+		
+		.table thead {
+	    	position: sticky;
+            top: 0;
+            z-index: 1;
+	    }
+	    
+	    .table {
+	    	font-size: 1.3rem !important;
+	    }
+	    
+	    .table thead th {
+		    font-weight: bold;
+		    background-color: var(--bs-info);
+        	color: var(--bs-white);
+		}
+		
+		.table tbody td {
+		    font-weight: bold;		   
+		    background-color: var(--bs-info-text-emphasis);  			
+        	color: var(--bs-white);
+		}
+*/		
+    </style>
+      
+</head lang="de" data-bs-theme="dark">
 <body class="p-4">
     
 	<nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-3 shadow-sm">
@@ -35,7 +70,8 @@
 	        <div id="status-indicators" class="d-flex gap-3">
 	            <span class="badge rounded-pill bg-success border border-light">MQTT OK</span>
 	            <span class="badge rounded-pill bg-success border border-light">Serial OK</span>
-	        </div>	        
+	        </div>
+	        
 	
 	    </div>
 	</nav>
@@ -43,7 +79,7 @@
 	<div class="row">
 		<!-- Linke Spalte: Start -->
 		<div class="col-md-6">
-			<div class="h2 border bg-success text-center"><strong>Start</strong></div>
+			<div class="h2 border bg-success text-light text-center"><strong>Start</strong></div>
 		   	<div class="table-scroll-container">
 		        <table class="table table-striped mb-0">
 					<thead>
@@ -60,7 +96,7 @@
 		</div>
 	    <!-- Rechte Spalte: Ziel -->
 	    <div class="col-md-6">
-	    	<div class="h2 border bg-danger text-center"><strong>Ziel</strong></div>
+	    	<div class="h2 border bg-danger text-light text-center"><strong>Ziel</strong></div>
 			<div class="table-scroll-container">
 			    <table class="table table-striped mb-0">
 			        <thead>

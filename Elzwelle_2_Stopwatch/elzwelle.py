@@ -7,6 +7,8 @@ import os
 import googlesheet
 import time
 import elzwelle_global as glob
+import subprocess
+import atexit
 
 from collections import deque
 from pathlib import Path
@@ -113,7 +115,30 @@ if __name__ == "__main__":
         web_server = WebProvider(web_data, port=8888, manager=manager)
         web_server.start_thread()
 
+    if config.getboolean('http', 'tunnel'):
+        # SSH-Tunnel starten
+        tunnel_process = subprocess.Popen([
+            "autossh",
+            "-p 12233",
+            "-M", "0",
+            "-N",
+            "-o", "ServerAliveInterval=30",
+            "-o", "ServerAliveCountMax=3",
+            "-R", "0.0.0.0:8888:localhost:8888",
+            "user@oranje.filounet.de"
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        
+        # Tunnel beim Programmende sauber beenden
+        def cleanup():
+            tunnel_process.terminate()
+            tunnel_process.wait()
+        
+        atexit.register(cleanup)
+
+        # Optional kurz warten, bis Tunnel steht
+        time.sleep(2)
+
     # Start GUI (Hauptthread)
     glob.program_launch_time_stamp = float(int(time.time()))
-    app = MainApp(gui_queue, manager)
+    app = MainApp(config.get('gui','theme'),gui_queue, manager)
     app.mainloop()

@@ -1,0 +1,23 @@
+.table-scroll-container {
+	/* Berechnet: 100% Fensterhöhe minus Platz für Header und Abstände */
+	height: calc(97vh - 200px) !important; 
+	overflow-y: scroll !important;
+	display: block;
+	border: 2px solid #888;
+}
+		
+.table {
+	font-size: 1.3rem !important;
+}
+	    
+.table thead th {
+	font-weight: bold;
+	background-color: var(--bs-info);
+	color: var(--bs-gray-100);
+}
+
+.table tbody td {
+    font-weight: bold;		   		
+    background-color: var(--bs-gray-700);	
+	color: var(--bs-white);
+}

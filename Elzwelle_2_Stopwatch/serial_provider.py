@@ -26,4 +26,11 @@ class SerialProvider(threading.Thread):
                                 self.callback("Finish", line[1:-1])    
             except (serial.SerialException, OSError):
                 print("Serial Port verloren... Reconnect in 5s")
+                self.callback("Error", "Serial connection lost")
                 time.sleep(5)
+            except Exception as e:
+                # "Fangnetz" für alle anderen Fehler (z.B. Programmierfehler)
+                # Sollte immer ganz unten stehen
+                print(f"Unerwarteter Fehler: {e}")
+            
+                    
